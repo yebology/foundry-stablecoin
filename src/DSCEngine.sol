@@ -49,6 +49,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant LIQUIDATION_PRECISION = 100;
     uint256 private constant MIN_HEALTH_FACTOR = 1e18;
     uint256 private constant LIQUIDATION_BONUS = 10;
+    uint256 private constant AGGREGATOR_PRICE_NOW_ETH = 2000;
 
     ERC20Mock wEthMock;
 
@@ -128,6 +129,7 @@ contract DSCEngine is ReentrancyGuard {
         uint256 amountCollateral,
         uint256 amountDSCToBurn
     ) external {
+        console.log(address(msg.sender));
         burnDSC(amountDSCToBurn);
         redeemCollateral(tokenCollateralAddress, amountCollateral);
     }
@@ -166,6 +168,10 @@ contract DSCEngine is ReentrancyGuard {
         if (!minted) {
             revert DSCEngine__MintFailed();
         }
+    }
+
+    function getDSCMinted() external view returns (uint256) {
+        return s_DSCMinted[msg.sender];
     }
 
     // done
@@ -229,8 +235,8 @@ contract DSCEngine is ReentrancyGuard {
         revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function getHealthFactor(address user) external view {
-        _healthFactor(address user);
+    function getHealthFactor(address user) external view returns (uint256) {
+        return _healthFactor(user);
     }
 
     // kalo rasio likuidasinya dibawah 1, mereka bisa dapat likuidasi
@@ -265,22 +271,17 @@ contract DSCEngine is ReentrancyGuard {
         address from,
         address to
     ) private {
-        console.log(s_collateralDeposited[from][tokenCollateralAddress]);
-        console.log(tokenCollateralAddress);
         s_collateralDeposited[from][tokenCollateralAddress] -= amountCollateral;
-        console.log(getAccountCollateralValue(from));
         emit CollateralRedeemed(
             from,
             to,
             tokenCollateralAddress,
             amountCollateral
         );
-        console.log("haha");
         bool success = IERC20(tokenCollateralAddress).transfer(
             to,
             amountCollateral
         );
-        console.log("hehe");
         if (!success) {
             revert DSCEngine__TransferFailed();
         }
@@ -293,7 +294,7 @@ contract DSCEngine is ReentrancyGuard {
         address dscFrom
     ) private {
         s_DSCMinted[whoseDSCAreWeBurnFor] -= amountDSC;
-        bool success = i_dsc.transferFrom(dscFrom, address(this), amountDSC);
+        bool success = i_dsc.transferFrom(dscFrom, address(this), amountDSC); // slaah disini kek e
         if (!success) {
             revert DSCEngine__TransferFailed();
         }
@@ -339,14 +340,16 @@ contract DSCEngine is ReentrancyGuard {
         // karena amount akan berjumlah 1e18 (dalam wei), maka price harus diconvert menjadi 1e18 juga
         // supaya memudahkan perhitungan
     }
-    
+
     // done
-    function getAccountInformation(address user)
+    function getAccountInformation(
+        address user
+    )
         external
         view
         returns (uint256 totalDSCMinted, uint256 collateralValueInUSD)
     {
-       (totalDSCMinted, collateralValueInUSD) =  _getAccountInformation(user);
+        (totalDSCMinted, collateralValueInUSD) = _getAccountInformation(user);
     }
     //
 }
