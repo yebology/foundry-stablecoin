@@ -52,13 +52,6 @@ contract DSCEngineTest is Test {
         _;
     }
 
-    modifier mintDSCToLiquidatePosition() {
-        vm.startPrank(USER);
-        engine.mintDSC(muchDSCToMint);
-        vm.stopPrank();
-        _;
-    }
-
     function setUp() public {
         deployer = new DeployDSC();
         (dsc, engine, hc) = deployer.run();
